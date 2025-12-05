@@ -8,11 +8,11 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
-      BCRYPT_COST: ${BCRYPT_COST}
-      ASYNC: ${ASYNC}
       EXTERNAL_PRODUCTS_URL: ${EXTERNAL_PRODUCTS_URL}
       HOST: ${HOST}
       PORT: ${PORT}
+      RACK_ENV: ${RACK_ENV:-development}
+      ERROR_BACKTRACE_LINES: ${ERROR_BACKTRACE_LINES:-10}
     networks:
       - fudo_network
 
