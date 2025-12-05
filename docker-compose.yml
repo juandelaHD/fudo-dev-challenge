@@ -4,6 +4,7 @@ services:
   app:
     build:
       context: .
+    container_name: fudo-challenge-api
     ports:
       - "${PORT}:9292"
     environment:
