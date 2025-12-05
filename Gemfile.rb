@@ -1,0 +1,12 @@
+source "https://rubygems.org"
+
+gem "rack"
+gem "rack-test"
+gem "rspec"
+gem "jwt"
+gem "dry-schema"
+gem "dotenv"
+gem "sequel"
+gem "pg"
+gem "pg"
+gem "bcrypt"
