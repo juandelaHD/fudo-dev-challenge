@@ -1,7 +1,7 @@
 Sequel.migration do
   up do
     create_table(:sync_logs) do
-      primary_key :id
+      column :id, :uuid, primary_key: true, default: Sequel.function(:gen_random_uuid)
       
       String :sync_type, null: false, size: 50
       String :status, null: false, size: 20
