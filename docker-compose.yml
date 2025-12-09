@@ -5,6 +5,8 @@ services:
     container_name: fudo-challenge-api
     ports:
       - "${PORT}:9292"
+    volumes:
+      - .:/app
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}

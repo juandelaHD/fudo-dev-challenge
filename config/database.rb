@@ -3,8 +3,14 @@ require 'sequel'
 module Database
   def self.connection
     @connection ||= begin
+      database_url = ENV['DATABASE_URL']
+
+      if database_url.nil? || database_url.strip.empty?
+        raise "ENV['DATABASE_URL'] is not set. Please configure the database connection string."
+      end
+      
       db = Sequel.connect(
-        ENV['DATABASE_URL'],
+        database_url,
         max_connections: 10,
         pool_timeout: 5,
         test: false,
@@ -19,7 +25,7 @@ module Database
     connection.test_connection
     true
   rescue => e
-    puts "Database health check failed: #{e.message}"
+    warn "Database health check failed: #{e.message}"
     false
   end
   

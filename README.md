@@ -6,7 +6,7 @@
 
 - GitHub: [@juandelaHD](https://github.com/juandelaHD)
 
-# Requisitos
+## Requisitos
 
 - Docker y Docker Compose
 
