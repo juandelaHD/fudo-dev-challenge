@@ -121,12 +121,14 @@ module ResponseHelpers
     path
   end
 
-  def build_pagination_meta(resource, page, size, total_pages)
-    {
+  def build_pagination_meta(resource, page, size, total_pages, total_items)
+    meta = {
       page: page,
       size: size,
-      total_pages: total_pages
+      total_pages: total_pages,
+      total_items: total_items
     }
+    meta
   end
 
   def build_pagination_links(resource, page, size, total_pages)

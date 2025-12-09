@@ -1,42 +1,20 @@
 require_relative 'base_controller'
-require_relative '../../config/database'
+require_relative '../services/health_service'
 
 class HealthController < BaseController
   def index
-    db_healthy = Database.healthy?
-
-    status = db_healthy ? 200 : 503
+    health_result = HealthService.check_health
     
-    health_data = {
-      status: db_healthy ? 'healthy' : 'unhealthy',
-      checks: {
-        database: {
-          status: db_healthy ? 'up' : 'down',
-          response_time_ms: measure_db_response_time,
-          details: db_healthy ? Database.connection_info : nil
-        }
-      }
-    }
-
-    meta = {
-      version: 'v1',
-      environment: ENV['RACK_ENV'] || 'development'
-    }
-    
-    [status, {
+    [health_result[:http_status], {
       'content-type' => 'application/json',
       'x-request-id' => generate_request_id,
       'cache-control' => 'no-cache, no-store, must-revalidate'
-    }, [success_json(health_data, meta: meta).to_json]]
-  end
-
-  private
-
-  def measure_db_response_time
-    start = Time.now
-    Database.healthy?
-    ((Time.now - start) * 1000).round(2)
-  rescue
-    nil
+    }, [success_json(
+      { 
+        status: health_result[:status], 
+        checks: health_result[:checks] 
+      }, 
+      meta: health_result[:metadata]
+    ).to_json]]
   end
 end
