@@ -3,6 +3,8 @@
 require_relative 'base_controller'
 require_relative '../services/product_service'
 require_relative '../validators/product_validator'
+require_relative '../../lib/job_queue'
+require 'securerandom'
 
 class ProductsController < BaseController
   
@@ -38,17 +40,56 @@ class ProductsController < BaseController
       return bad_request('Validation failed', details: validation[:errors], path: request.path_info)
     end
     
-    product = ProductService.create_product(
-      name: validation[:data][:name],
-      description: validation[:data][:description],
-      user_id: current_user_id
-    )
+    async = params[:async] == true || params[:async] == 'true'
     
-    meta = {
-      location: resource_location('products', product[:id])
-    }
-    
-    created({ product: product }, meta: meta)
+    if async
+      job_id = SecureRandom.uuid
+      
+      begin
+        job = JobQueue.enqueue(
+          job_id,
+          'create_product',
+          {
+            name: validation[:data][:name],
+            description: validation[:data][:description],
+            user_id: current_user_id
+          }
+        )
+        
+        meta = {
+          job_id: job_id,
+          status: 'accepted',
+          message: 'Product creation queued for processing',
+          status_url: resource_location('jobs', job_id)
+        }
+        
+        accepted({ job_id: job_id }, meta: meta)
+      rescue JobQueue::QueueFullError => e
+        service_unavailable(
+          e.message,
+          path: request.path_info,
+          details: {
+            queue_size: JobQueue.size,
+            max_capacity: JobQueue.max_capacity,
+            available_capacity: JobQueue.available_capacity,
+            retry_after: '30s',
+            suggestion: 'Please try again in a few moments when the queue has available capacity.'
+          }
+        )
+      end
+    else
+      product = ProductService.create_product(
+        name: validation[:data][:name],
+        description: validation[:data][:description],
+        user_id: current_user_id
+      )
+      
+      meta = {
+        location: resource_location('products', product[:id])
+      }
+      
+      created({ product: product }, meta: meta)
+    end
   rescue ProductService::ProductValidationError => e
     bad_request(e.message, path: request.path_info)
   rescue ProductService::DuplicateProductError => e
