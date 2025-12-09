@@ -14,8 +14,12 @@ RUN bundle install
 
 COPY . .
 
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 9292
 
 ENV RUBY_IOENCODING=UTF-8
 
-CMD bundle exec puma --quiet -b tcp://${HOST:-0.0.0.0}:${PORT:-9292} -e ${RACK_ENV:-development} config.ru
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+CMD ["bundle", "exec", "puma", "--quiet", "-b", "tcp://0.0.0.0:9292", "-e", "development", "config.ru"]
