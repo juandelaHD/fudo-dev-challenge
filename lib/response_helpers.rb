@@ -79,6 +79,10 @@ module ResponseHelpers
     success_response(201, data, meta: meta)
   end
 
+  def accepted(data, meta: {})
+    success_response(202, data, meta: meta)
+  end
+
   def bad_request(message, details: nil, path: nil)
     error_response(400, message, path: path, details: details)
   end
@@ -105,6 +109,10 @@ module ResponseHelpers
 
   def internal_server_error(message = 'An unexpected internal server error occurred. Please try again later or contact support if the issue persists.', path: nil)
     error_response(500, message, path: path)
+  end
+
+  def service_unavailable(message = 'Service temporarily unavailable. Please try again later.', path: nil, details: nil)
+    error_response(503, message, path: path, details: details)
   end
 
   def api_base_path
@@ -172,6 +180,7 @@ module ResponseHelpers
     when 405 then 'Method Not Allowed'
     when 409 then 'Conflict'
     when 422 then 'Unprocessable Entity'
+    when 429 then 'Too Many Requests'
     when 500 then 'Internal Server Error'
     when 503 then 'Service Unavailable'
     else 'Error'

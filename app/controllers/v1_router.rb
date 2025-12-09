@@ -3,6 +3,7 @@
 require_relative '../../lib/response_helpers'
 require_relative 'auth_controller'
 require_relative 'products_controller'
+require_relative 'jobs_controller'
 
 class V1Router
   include ResponseHelpers
@@ -34,6 +35,14 @@ class V1Router
       else
         method_not_allowed('Only GET and POST methods are allowed', path: path)
       end
+    when '/jobs'
+      return method_not_allowed('Only GET method is allowed', path: path) unless method == 'GET'
+      JobsController.new(request).index
+    when %r{^/jobs/([a-f0-9-]+)$}
+      return method_not_allowed('Only GET method is allowed', path: path) unless method == 'GET'
+      job_id = $1
+      request.params['id'] = job_id
+      JobsController.new(request).show
     else
       not_found(path: path)
     end
@@ -66,7 +75,19 @@ class V1Router
       {
         path: '/v1/products',
         method: 'POST',
-        description: 'Create a new product',
+        description: 'Create a new product (use async=true for async processing)',
+        auth_required: true
+      },
+      {
+        path: '/v1/jobs',
+        method: 'GET',
+        description: 'List async jobs',
+        auth_required: true
+      },
+      {
+        path: '/v1/jobs/:id',
+        method: 'GET',
+        description: 'Get async job status',
         auth_required: true
       }
     ]

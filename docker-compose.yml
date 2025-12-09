@@ -16,6 +16,8 @@ services:
       PORT: ${PORT}
       RACK_ENV: ${RACK_ENV:-development}
       ERROR_BACKTRACE_LINES: ${ERROR_BACKTRACE_LINES:-10}
+      SIMULATE_PROCESSING_DELAY: ${SIMULATE_PROCESSING_DELAY:-3}
+      JOB_QUEUE_MAX_CAPACITY: ${JOB_QUEUE_MAX_CAPACITY:-10}
     networks:
       - fudo_network
 
