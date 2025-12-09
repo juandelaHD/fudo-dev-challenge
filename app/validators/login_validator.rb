@@ -5,7 +5,7 @@ require 'dry-schema'
 class LoginValidator
   Schema = Dry::Schema.Params do
     required(:email).filled(:string).value(format?: /\A[^@\s]+@[^@\s]+\z/)
-    required(:password).filled(:string)
+    required(:password).filled(:string).value(min_size?: 3, max_size?: 50)
   end
 
   def self.call(params)
