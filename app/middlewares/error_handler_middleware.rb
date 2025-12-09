@@ -30,7 +30,7 @@ class ErrorHandlerMiddleware
     when Sequel::NoMatchingRow, Errors::NotFound
       error_response(404, 'Not Found', 'Resource not found', env)
     when Errors::Unauthorized
-      error_response(401, 'Unauthorized', error.message.empty? ? 'Authentication required' : error.message, env)
+      error_response(401, 'Unauthorized', error.message.to_s.empty? ? 'Authentication required' : error.message, env)
     when ArgumentError
       error_response(400, 'Bad Request', error.message, env)
     else
