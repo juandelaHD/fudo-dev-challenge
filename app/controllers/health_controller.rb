@@ -15,10 +15,6 @@ class HealthController < BaseController
       }
     }
     
-    if db_healthy
-      ok(health_data)
-    else
-      response(status, success_json(health_data))
-    end
+    response(status, success_json(health_data))
   end
 end
