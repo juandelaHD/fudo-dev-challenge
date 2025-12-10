@@ -10,6 +10,12 @@ services:
       POSTGRES_PASSWORD: test_password
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d fudo_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   test:
     build:
@@ -17,7 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: fudo-challenge-test
     depends_on:
-      - test-db
+      test-db:
+        condition: service_healthy
     networks:
       - test-network
     environment:
@@ -33,13 +40,10 @@ services:
       - bundle_cache:/usr/local/bundle
     working_dir: /app
     command: sh -c "
-      echo 'Waiting for PostgreSQL to be ready...' &&
-      sleep 5 &&
       ruby -r sequel -r ./config/database -e \"
         require 'sequel/extensions/migration';
         puts 'Running test migrations...';
         Sequel::Migrator.run(DB, './db/migrations');
-        puts 'Test database ready!';
       \" &&
       ruby -Itest -e 'Dir.glob(\"test/**/*_test.rb\").each { |f| require \"./#{f}\" }'
       "
