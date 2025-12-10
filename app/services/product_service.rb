@@ -27,6 +27,11 @@ class ProductService
       }
     }
   end
+  
+  def self.check_duplicate(name:)
+    normalized_name = name.to_s.strip
+    Product.where(name: normalized_name).first
+  end
 
   def self.create_product(name:, description: nil, user_id:)
     product = Product.new(

@@ -43,6 +43,14 @@ class ProductsController < BaseController
     async = params[:async] == true || params[:async] == 'true'
     
     if async
+      existing_product = ProductService.check_duplicate(name: validation[:data][:name])
+      if existing_product
+        return conflict(
+          'A product with this name already exists',
+          path: request.path_info
+        )
+      end
+      
       user_pending_jobs = JobQueue.pending_count_by_user(current_user_id)
       max_user_pending_jobs = (ENV['MAX_USER_PENDING_JOBS'] || 10).to_i
       
