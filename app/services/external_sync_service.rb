@@ -12,14 +12,19 @@ class ExternalSyncService
   class APIError < SyncError; end
   class NetworkError < SyncError; end
 
-  EXTERNAL_API_URL = ENV['EXTERNAL_PRODUCTS_URL'].to_s.empty? ? 'https://23f0013223494503b54c61e8bee1190c.api.mockbin.io/' : ENV['EXTERNAL_PRODUCTS_URL']
+  EXTERNAL_API_URL = ENV['EXTERNAL_PRODUCTS_URL']&.to_s&.strip
   REQUEST_TIMEOUT = 10
   MAX_RETRIES = 3
 
   class << self
     def sync_on_startup
+      if EXTERNAL_API_URL.nil? || EXTERNAL_API_URL.empty?
+        warn "[ExternalSync] EXTERNAL_PRODUCTS_URL not set; skipping initial external sync"
+        return
+      end
+
       return if already_synced?
-      
+
       puts "[ExternalSync] No previous successful sync found, initiating first-time sync..."
       perform_sync
     rescue => e
