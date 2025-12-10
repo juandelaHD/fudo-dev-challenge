@@ -58,7 +58,7 @@ module TestHelpers
 
   def get_auth_token(user = nil)
     unless user
-      user = create_test_user(email: "test-#{SecureRandom.hex(8)}@example.com")
+      user = create_test_user(email: "test-#{SecureRandom.hex(4)}@example.com")
     end
     token = JwtService.encode(user_id: user.id)
     token
