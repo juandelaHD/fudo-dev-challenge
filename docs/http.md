@@ -1,0 +1,1 @@
+HTTP es un protocolo de la capa de aplicación que define cómo clientes y servidores intercambian mensajes. Opera sobre TCP y utiliza un modelo de solicitud y respuesta, donde cada petición es independiente y sin estado, salvo que se utilicen cookies para mantener el contexto.

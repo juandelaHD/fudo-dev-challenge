@@ -1,0 +1,1 @@
+TCP es un protocolo de transporte que garantiza la entrega confiable y ordenada de datos entre hosts. Establece una conexión con un handshake en tres pasos, controla la integridad de los paquetes y retransmite los que se pierden para asegurar la entrega.
