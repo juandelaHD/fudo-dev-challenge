@@ -4,6 +4,11 @@ require_relative '../../lib/job_queue'
 require_relative '../services/product_service'
 
 class ProductWorker
+  
+  class ShutdownInterrupt < StandardError; end
+  
+  THREAD_TIMEOUT = 5
+  
   class << self
     attr_reader :thread, :running
 
@@ -11,21 +16,30 @@ class ProductWorker
       return if @running
 
       @running = true
+      @processing_job = nil
       @thread = Thread.new do
         puts "[ProductWorker] Worker started and listening for jobs..."
         
-        loop do
+        while @running
           begin
-            job = JobQueue.pop_job 
+            job = JobQueue.pop_job
             
-            next unless job
-
+            if job.nil?
+              break
+            end
+            
+            @processing_job = job
             process_job(job)
+            @processing_job = nil
           rescue => e
             warn "[ProductWorker] Error in worker loop: #{e.message}"
             warn e.backtrace.first(ENV['ERROR_BACKTRACE_LINES'].to_i || 5).join("\n")
+            @processing_job = nil
+            break unless @running
           end
         end
+        
+        puts "[ProductWorker] Worker loop exited cleanly"
       end
 
       @thread.abort_on_exception = false
@@ -33,9 +47,30 @@ class ProductWorker
     end
 
     def stop
+      return unless @running
       @running = false
-      @thread&.kill
-      puts "[ProductWorker] Worker stopped"
+      JobQueue.close
+      
+      if @processing_job
+        job_id = @processing_job[:id]
+        puts "[ProductWorker] Worker is processing job #{job_id}, interrupting..."
+        $stdout.flush
+        @thread&.raise(ShutdownInterrupt)
+      end
+      
+      puts "[ProductWorker] Waiting for worker thread to finish (timeout: #{THREAD_TIMEOUT}s)..."
+      $stdout.flush
+      
+      @thread&.join(THREAD_TIMEOUT)
+      
+      if @thread&.alive?
+        warn "[ProductWorker] Thread did not stop gracefully after #{THREAD_TIMEOUT}s, forcing termination"
+        @thread&.kill
+      else
+        puts "[ProductWorker] Worker thread stopped gracefully"
+      end
+      
+      puts "[ProductWorker] Worker stopped successfully"
     end
 
     def status
@@ -65,6 +100,16 @@ class ProductWorker
         else
           raise "Unknown job type: #{job[:type]}"
         end
+      rescue ShutdownInterrupt => e
+        JobQueue.update_job(job_id, {
+          status: 'cancelled',
+          completed_at: Time.now,
+          error: {
+            type: 'ShutdownInterruption',
+            message: 'Job processing was interrupted by worker shutdown'
+          }
+        })
+        puts "[ProductWorker] Job #{job_id} cancelled due to shutdown (interrupted)"
       rescue => e
         handle_job_error(job_id, e)
       end
@@ -74,7 +119,22 @@ class ProductWorker
       job_id = job[:id]
       payload = job[:payload]
 
-      sleep(ENV['SIMULATE_PROCESSING_DELAY'].to_i || 3)
+      delay = ENV['SIMULATE_PROCESSING_DELAY'].to_i
+      delay = 3 if delay <= 0
+      sleep(delay)
+      
+      unless @running
+        JobQueue.update_job(job_id, {
+          status: 'cancelled',
+          completed_at: Time.now,
+          error: {
+            type: 'ShutdownInterruption',
+            message: 'Job processing was interrupted by worker shutdown'
+          }
+        })
+        puts "[ProductWorker] Job #{job_id} cancelled due to shutdown"
+        return
+      end
 
       product = ProductService.create_product(
         name: payload[:name],

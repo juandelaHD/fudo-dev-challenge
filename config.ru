@@ -7,6 +7,7 @@ $stderr.sync = true
 ProductWorker.start
 
 at_exit do
+  puts "\n[Shutdown] Application shutting down, stopping workers..."
   ProductWorker.stop
 end
 

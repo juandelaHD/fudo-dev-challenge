@@ -15,21 +15,25 @@ class JobsController < BaseController
       return not_found("Job not found", path: request.path_info)
     end
     
+    if job.dig(:payload, :user_id) != current_user_id
+      return not_found("Job not found", path: request.path_info)
+    end
+    
     job_response = JobSerializer.serialize(job)
     
     ok({ job: job_response })
   end
   
   def index
-    limit = params['limit']&.to_i || 50
-    limit = [limit, 100].min
+    per_page = params['per_page']&.to_i || 50
+    per_page = [per_page, 100].min
     
-    jobs = JobQueue.list_jobs(limit: limit)
+    jobs = JobQueue.list_jobs_by_user(user_id: current_user_id, limit: per_page)
     jobs_response = JobSerializer.serialize_collection(jobs)
     
     meta = {
       count: jobs_response.size,
-      total_pending: JobQueue.pending_count
+      total_pending: JobQueue.pending_count_by_user(current_user_id)
     }
     
     ok(jobs_response, meta: meta)

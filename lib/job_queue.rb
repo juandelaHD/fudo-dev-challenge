@@ -5,7 +5,10 @@ require 'thread'
 class JobQueue
   class QueueFullError < StandardError; end
 
-  MAX_CAPACITY = (ENV['JOB_QUEUE_MAX_CAPACITY'] || 10).to_i
+  MAX_CAPACITY = begin
+    capacity = ENV['JOB_QUEUE_MAX_CAPACITY'].to_i
+    capacity > 0 ? capacity : 10
+  end
 
   class << self
     def initialize_queue
@@ -74,10 +77,26 @@ class JobQueue
         @jobs.values.sort_by { |j| j[:enqueued_at] }.reverse.take(limit)
       end
     end
+    
+    def list_jobs_by_user(user_id:, limit: 50)
+      @mutex.synchronize do
+        @jobs.values
+          .select { |j| j.dig(:payload, :user_id) == user_id }
+          .sort_by { |j| j[:enqueued_at] }
+          .reverse
+          .take(limit)
+      end
+    end
 
     def pending_count
       @mutex.synchronize do
         @jobs.values.count { |j| j[:status] == 'pending' }
+      end
+    end
+    
+    def pending_count_by_user(user_id)
+      @mutex.synchronize do
+        @jobs.values.count { |j| j[:status] == 'pending' && j.dig(:payload, :user_id) == user_id }
       end
     end
 
@@ -91,6 +110,13 @@ class JobQueue
     
     def pop_job
       @queue.pop
+    rescue ClosedQueueError
+      nil
+    end
+    
+    def close
+      @queue.close
+      puts "[JobQueue] Queue closed, #{@queue.num_waiting} waiting thread(s) unblocked"
     end
   end
 
