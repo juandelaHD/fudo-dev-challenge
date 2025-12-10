@@ -32,9 +32,10 @@ class Application
       map '/' do
         run lambda { |_env|
           helper = Object.new.extend(ResponseHelpers)
+          version = (ENV['API_PREFIX'] || 'v1').to_s
           data = {
             message: 'Fudo Products API',
-            version: 'v1',
+            version: version,
           }
           helper.ok(data)
         }

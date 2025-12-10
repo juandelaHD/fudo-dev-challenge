@@ -93,9 +93,10 @@ class V1Router
       }
     ]
 
+    version = (ENV['API_PREFIX'] || 'v1').to_s
     data = {
       api: 'Fudo Products API',
-      version: 'v1',
+      version: version,
       endpoints: endpoints
     }
 
