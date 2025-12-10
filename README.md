@@ -21,7 +21,10 @@ git clone https://github.com/juandelaHD/fudo-dev-challenge.git
 cd fudo-dev-challenge
 
 # 2. Configurar variables de entorno
-# Colocar el archivo .env dentro de la carpeta del proyecto (dentro de `fudo-dev-challenge`). 
+# Colocar el archivo .env dentro de la carpeta del proyecto (dentro de `fudo-dev-challenge`).
+
+# NOTA: Dado que la base de datos está hosteada en Supabase, el archivo .env será enviado por correo a quien corresponda con el asunto: 
+# "Variables de entorno - FUDO Challenge - Juan Martín de la Cruz" 
 ```
 
 ## Usos
