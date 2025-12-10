@@ -33,15 +33,15 @@ class ProductsController < BaseController
   end
   
   def create
-    params = parse_json_body
+    body_params = parse_json_body
     
-    validation = ProductValidator.validate_create(params)
+    validation = ProductValidator.validate_create(body_params)
     unless validation[:success]
-      return bad_request('Validation failed', details: validation[:errors], path: request.path_info)
+      return unprocessable_entity('Validation failed', details: validation[:errors], path: request.path_info)
     end
     
-    async = params[:async] == true || params[:async] == 'true'
-    
+    async_param = params['async'] || body_params[:async]
+    async = async_param == true || async_param == 'true'
     if async
       existing_product = ProductService.check_duplicate(name: validation[:data][:name])
       if existing_product
@@ -111,7 +111,7 @@ class ProductsController < BaseController
         location: resource_location('products', product[:id])
       }
       
-      created({ product: product }, meta: meta)
+      created(product, meta: meta)
     end
   rescue ProductService::ProductValidationError => e
     bad_request(e.message, path: request.path_info)

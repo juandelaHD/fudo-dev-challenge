@@ -5,7 +5,10 @@ GEM
     bcrypt (3.1.20)
     bigdecimal (3.3.1)
     concurrent-ruby (1.3.5)
-    diff-lcs (1.6.2)
+    database_cleaner-core (2.0.1)
+    database_cleaner-sequel (2.0.2)
+      database_cleaner-core (~> 2.0.0)
+      sequel
     dotenv (3.2.0)
     dry-configurable (1.3.0)
       dry-core (~> 1.1)
@@ -39,6 +42,7 @@ GEM
     jwt (3.1.2)
       base64
     logger (1.7.0)
+    minitest (5.26.2)
     nio4r (2.7.5)
     pg (1.6.2-x86_64-linux-musl)
     puma (7.1.0)
@@ -48,19 +52,7 @@ GEM
       rack (>= 1.3)
     rackup (2.3.1)
       rack (>= 3)
-    rspec (3.13.2)
-      rspec-core (~> 3.13.0)
-      rspec-expectations (~> 3.13.0)
-      rspec-mocks (~> 3.13.0)
-    rspec-core (3.13.6)
-      rspec-support (~> 3.13.0)
-    rspec-expectations (3.13.5)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.13.0)
-    rspec-mocks (3.13.7)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.13.0)
-    rspec-support (3.13.6)
+    rake (13.3.1)
     sequel (5.99.0)
       bigdecimal
     zeitwerk (2.7.3)
@@ -70,15 +62,17 @@ PLATFORMS
 
 DEPENDENCIES
   bcrypt
+  database_cleaner-sequel
   dotenv
   dry-schema
   jwt
+  minitest
   pg
   puma
   rack
   rack-test
   rackup
-  rspec
+  rake
   sequel
 
 BUNDLED WITH

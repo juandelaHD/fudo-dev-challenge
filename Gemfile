@@ -11,6 +11,7 @@ gem "pg"
 gem "bcrypt"
 
 group :test do
+  gem "minitest"
   gem "rack-test"
-  gem "rspec"
+  gem "database_cleaner-sequel"
 end
