@@ -40,7 +40,8 @@ class V1Router
       JobsController.new(request).index
     when %r{^/jobs/([a-f0-9-]+)$}
       return method_not_allowed('Only GET method is allowed', path: path) unless method == 'GET'
-      job_id = $1
+      match_data = path.match(%r{^/jobs/([a-f0-9-]+)$})
+      job_id = match_data[1] if match_data
       request.params['id'] = job_id
       JobsController.new(request).show
     else

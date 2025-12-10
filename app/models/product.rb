@@ -49,7 +49,6 @@ class Product < Sequel::Model
     validates_presence [:name]
     validates_unique :name
     validates_max_length 255, :name
-    
     validates_unique :external_id if external_id
   end
 end

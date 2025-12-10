@@ -10,7 +10,7 @@ class ProductsController < BaseController
   
   def index
     page = params['page']&.to_i
-    per_page = params['size']&.to_i || params['per_page']&.to_i
+    per_page = params['per_page']&.to_i || params['size']&.to_i
     
     result = ProductService.list_products(page: page, per_page: per_page)
     
@@ -43,10 +43,25 @@ class ProductsController < BaseController
     async = params[:async] == true || params[:async] == 'true'
     
     if async
+      user_pending_jobs = JobQueue.pending_count_by_user(current_user_id)
+      max_user_pending_jobs = (ENV['MAX_USER_PENDING_JOBS'] || 10).to_i
+      
+      if user_pending_jobs >= max_user_pending_jobs
+        return too_many_requests(
+          "You have too many pending jobs (#{user_pending_jobs}/#{max_user_pending_jobs}). Please wait for some to complete.",
+          path: request.path_info,
+          details: {
+            pending_jobs: user_pending_jobs,
+            max_allowed: max_user_pending_jobs,
+            retry_after: '60s'
+          }
+        )
+      end
+      
       job_id = SecureRandom.uuid
       
       begin
-        job = JobQueue.enqueue(
+        JobQueue.enqueue(
           job_id,
           'create_product',
           {
@@ -73,7 +88,7 @@ class ProductsController < BaseController
             max_capacity: JobQueue.max_capacity,
             available_capacity: JobQueue.available_capacity,
             retry_after: '30s',
-            suggestion: 'Please try again in a few moments when the queue has available capacity.'
+            suggestion: 'Please try again after 30 seconds.'
           }
         )
       end
