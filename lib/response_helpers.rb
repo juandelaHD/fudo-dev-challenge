@@ -75,12 +75,12 @@ module ResponseHelpers
     success_response(200, data, meta: meta, links: links)
   end
 
-  def created(data, meta: {})
-    success_response(201, data, meta: meta)
+  def created(data, meta: {}, links: nil)
+    success_response(201, data, meta: meta, links: links)
   end
 
-  def accepted(data, meta: {})
-    success_response(202, data, meta: meta)
+  def accepted(data, meta: {}, links: nil)
+    success_response(202, data, meta: meta, links: links)
   end
 
   def bad_request(message, details: nil, path: nil)
@@ -105,6 +105,10 @@ module ResponseHelpers
 
   def method_not_allowed(message = 'Method not allowed', path: nil)
     error_response(405, message, path: path)
+  end
+  
+  def too_many_requests(message = 'Too many requests', path: nil, details: nil)
+    error_response(429, message, path: path, details: details)
   end
 
   def internal_server_error(message = 'An unexpected internal server error occurred. Please try again later or contact support if the issue persists.', path: nil)
