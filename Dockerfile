@@ -2,7 +2,6 @@ FROM ruby:3.4.7-alpine
 
 WORKDIR /app
 
-# Instalar dependencias del sistema
 RUN apk add --no-cache \
     build-base \
     postgresql-dev \
@@ -14,8 +13,12 @@ RUN bundle install
 
 COPY . .
 
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 9292
 
 ENV RUBY_IOENCODING=UTF-8
 
-CMD bundle exec puma --quiet -b tcp://${HOST:-0.0.0.0}:${PORT:-9292} -e ${RACK_ENV:-development} config.ru
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+CMD ["sh", "-c", "bundle exec rackup --host ${HOST:-0.0.0.0} --port ${PORT:-9292} --env ${RACK_ENV:-development} config.ru"]

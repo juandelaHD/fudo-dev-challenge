@@ -3,6 +3,7 @@ services:
     build:
       context: .
     container_name: fudo-challenge-api
+    stop_grace_period: 20s
     ports:
       - "${PORT}:9292"
     volumes:
@@ -16,6 +17,9 @@ services:
       PORT: ${PORT}
       RACK_ENV: ${RACK_ENV:-development}
       ERROR_BACKTRACE_LINES: ${ERROR_BACKTRACE_LINES:-10}
+      SIMULATE_PROCESSING_DELAY: ${SIMULATE_PROCESSING_DELAY:-3}
+      JOB_QUEUE_MAX_CAPACITY: ${JOB_QUEUE_MAX_CAPACITY:-10}
+      MAX_USER_PENDING_JOBS: ${MAX_USER_PENDING_JOBS:-10}
     networks:
       - fudo_network
 

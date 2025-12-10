@@ -48,23 +48,7 @@ class Product < Sequel::Model
     super
     validates_presence [:name]
     validates_unique :name
-    validates_min_length 3, :name
     validates_max_length 255, :name
-    
     validates_unique :external_id if external_id
-  end
-  
-  def to_hash
-    {
-      id: id,
-      name: name,
-      description: description,
-      external_id: external_id,
-      user_id: user_id,
-      synced: synced?,
-      created_by_user: created_by_user?,
-      created_at: created_at.iso8601,
-      updated_at: updated_at.iso8601
-    }
   end
 end

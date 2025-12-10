@@ -1,10 +1,10 @@
 Sequel.migration do
   up do
     create_table(:product_sync_logs) do
-      primary_key :id
+      column :id, :uuid, primary_key: true, default: Sequel.function(:gen_random_uuid)
       
-      foreign_key :product_id, :products, null: false, on_delete: :cascade
-      foreign_key :sync_log_id, :sync_logs, null: false, on_delete: :cascade
+      foreign_key :product_id, :products, type: :uuid, null: false, on_delete: :cascade
+      foreign_key :sync_log_id, :sync_logs, type: :uuid, null: false, on_delete: :cascade
       
       DateTime :created_at, null: false, default: Sequel::CURRENT_TIMESTAMP
       

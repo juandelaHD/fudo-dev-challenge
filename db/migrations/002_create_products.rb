@@ -1,12 +1,12 @@
 Sequel.migration do
   up do
     create_table(:products) do
-      primary_key :id
+      column :id, :uuid, primary_key: true, default: Sequel.function(:gen_random_uuid)
       
       String :name, null: false, unique: true, size: 255
       String :description, text: true
       String :external_id, unique: true, size: 255
-      foreign_key :user_id, :users, null: true, on_delete: :set_null
+      foreign_key :user_id, :users, type: :uuid, null: true, on_delete: :set_null
       
       DateTime :created_at, null: false, default: Sequel::CURRENT_TIMESTAMP
       DateTime :updated_at, null: false, default: Sequel::CURRENT_TIMESTAMP

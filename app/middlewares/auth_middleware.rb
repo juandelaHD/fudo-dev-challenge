@@ -38,7 +38,7 @@ class AuthMiddleware
   private
 
   def excluded_path?(path)
-    EXCLUDED_PATHS.any? { |excluded| path.start_with?(excluded) }
+    EXCLUDED_PATHS.include?(path)
   end
 
   def extract_token(request)

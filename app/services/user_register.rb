@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../models/user'
+require_relative '../serializers/user_serializer'
 require_relative './jwt_service'
 
 class UserRegister
@@ -48,7 +49,7 @@ class UserRegister
     }
 
     {
-      user: user.to_hash,
+      user: UserSerializer.serialize(user),
       token: token_info
     }
   end

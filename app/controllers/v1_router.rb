@@ -2,6 +2,8 @@
 
 require_relative '../../lib/response_helpers'
 require_relative 'auth_controller'
+require_relative 'products_controller'
+require_relative 'jobs_controller'
 
 class V1Router
   include ResponseHelpers
@@ -24,6 +26,24 @@ class V1Router
     when '/auth/login'
       return method_not_allowed('The HTTP method is not allowed for this endpoint', path: path) unless method == 'POST'
       AuthController.new(request).login
+    when '/products'
+      case method
+      when 'GET'
+        ProductsController.new(request).index
+      when 'POST'
+        ProductsController.new(request).create
+      else
+        method_not_allowed('Only GET and POST methods are allowed', path: path)
+      end
+    when '/jobs'
+      return method_not_allowed('Only GET method is allowed', path: path) unless method == 'GET'
+      JobsController.new(request).index
+    when %r{^/jobs/([a-f0-9-]+)$}
+      return method_not_allowed('Only GET method is allowed', path: path) unless method == 'GET'
+      match_data = path.match(%r{^/jobs/([a-f0-9-]+)$})
+      job_id = match_data[1] if match_data
+      request.params['id'] = job_id
+      JobsController.new(request).show
     else
       not_found(path: path)
     end
@@ -46,6 +66,30 @@ class V1Router
         method: 'POST',
         description: 'Authenticate user and obtain JWT token',
         auth_required: false
+      },
+      {
+        path: '/v1/products',
+        method: 'GET',
+        description: 'List all products with pagination',
+        auth_required: true
+      },
+      {
+        path: '/v1/products',
+        method: 'POST',
+        description: 'Create a new product (use async=true for async processing)',
+        auth_required: true
+      },
+      {
+        path: '/v1/jobs',
+        method: 'GET',
+        description: 'List async jobs',
+        auth_required: true
+      },
+      {
+        path: '/v1/jobs/:id',
+        method: 'GET',
+        description: 'Get async job status',
+        auth_required: true
       }
     ]
 

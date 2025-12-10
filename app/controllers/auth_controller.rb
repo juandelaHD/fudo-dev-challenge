@@ -23,7 +23,7 @@ class AuthController < BaseController
     ).call
 
     meta = {
-      location: "/v1/users/#{result[:user][:id]}"
+      location: resource_location('users', result[:user][:id])
     }
 
     created(result, meta: meta)

@@ -1,7 +1,9 @@
 Sequel.migration do
   up do
+    run 'CREATE EXTENSION IF NOT EXISTS "pgcrypto"'
+    
     create_table(:users) do
-      primary_key :id
+      column :id, :uuid, primary_key: true, default: Sequel.function(:gen_random_uuid)
       
       String :email, null: false, unique: true, size: 255
       String :password_hash, null: false, size: 255
@@ -17,6 +19,7 @@ Sequel.migration do
 
   down do
     drop_table(:users)
+    run 'DROP EXTENSION IF EXISTS "pgcrypto"'
     puts 'Dropped users table'
   end
 end
