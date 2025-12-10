@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apk add --no-cache \
     build-base \
     postgresql-dev \
+    postgresql-client \
     tzdata
 
 COPY Gemfile ./
