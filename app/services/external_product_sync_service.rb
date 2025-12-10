@@ -3,16 +3,19 @@
 require 'net/http'
 require 'json'
 require 'uri'
+require 'openssl'
 require_relative '../models/product'
 require_relative '../models/sync_log'
 require_relative '../models/product_sync_log'
 
-class ExternalSyncService
+# Service for synchronizing products from external Fudo API.
+# Runs once on first application startup.
+class ExternalProductSyncService
   class SyncError < StandardError; end
   class APIError < SyncError; end
   class NetworkError < SyncError; end
 
-  EXTERNAL_API_URL = ENV['EXTERNAL_PRODUCTS_URL']&.to_s&.strip
+  EXTERNAL_API_URL = ENV['EXTERNAL_PRODUCTS_URL']&.strip
   REQUEST_TIMEOUT = 10
   MAX_RETRIES = 3
 
@@ -27,7 +30,7 @@ class ExternalSyncService
 
       puts "[ExternalSync] No previous successful sync found, initiating first-time sync..."
       perform_sync
-    rescue => e
+    rescue StandardError => e
       warn "[ExternalSync] Failed to sync on startup: #{e.message}"
       warn "[ExternalSync] Application will continue without external products"
     end
@@ -43,7 +46,7 @@ class ExternalSyncService
         
         puts "[ExternalSync] Successfully synced #{synced_count} products"
         { success: true, synced_count: synced_count }
-      rescue => e
+      rescue StandardError => e
         fail_sync_log(sync_log, e)
         raise
       end
@@ -55,7 +58,7 @@ class ExternalSyncService
       SyncLog.where(
         sync_type: SyncLog::SYNC_TYPE_EXTERNAL,
         status: SyncLog::STATUS_COMPLETED
-      ).count > 0
+      ).first != nil
     end
 
     def create_sync_log
@@ -67,16 +70,23 @@ class ExternalSyncService
     end
 
     def fetch_external_products
-      uri = URI.parse(EXTERNAL_API_URL)
-      
+      begin
+        uri = URI.parse(EXTERNAL_API_URL)
+      rescue URI::InvalidURIError => e
+        raise APIError, "Invalid EXTERNAL_PRODUCTS_URL: #{e.message}"
+      end
+
       retries = 0
       begin
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = uri.scheme == 'https'
         http.open_timeout = REQUEST_TIMEOUT
         http.read_timeout = REQUEST_TIMEOUT
+        if http.use_ssl?
+          http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        end
 
-        request = Net::HTTP::Post.new(uri.path)
+        request = Net::HTTP::Post.new(uri.request_uri)
         request['Content-Type'] = 'application/json'
         request['Accept'] = 'application/json'
 
@@ -115,37 +125,44 @@ class ExternalSyncService
       synced_count = 0
       skipped_count = 0
 
-      DB.transaction do
-        products_data.each do |product_data|
-          external_id = product_data['id'].to_s
-          name = product_data['name']&.strip
+      existing_records = Product.select(:external_id, :name).all
+      existing_external_ids = existing_records.map { |r| r[:external_id].to_s }.to_set
+      existing_names = existing_records.map { |r| r[:name].to_s.downcase.strip }.to_set
 
-          next unless valid_product_data?(external_id, name)
+      products_data.each do |product_data|
+        external_id = product_data['id'].to_s
+        name = product_data['name']&.strip
 
-          existing = Product.where(Sequel.|({external_id: external_id}, {name: name})).first
+        next unless valid_product_data?(external_id, name)
 
-          if existing
-            skipped_count += 1
-            puts "[ExternalSync] Skipping duplicate: #{name} (external_id: #{external_id})"
-            next
+        if existing_external_ids.include?(external_id) || existing_names.include?(name.to_s.downcase)
+          skipped_count += 1
+          next
+        end
+
+        begin
+          product = nil
+          DB.transaction do
+            product = Product.create(
+              name: name,
+              description: nil,
+              external_id: external_id,
+              user_id: nil
+            )
+            ProductSyncLog.link(product, sync_log)
           end
 
-          product = Product.create(
-            name: name,
-            description: nil,
-            external_id: external_id,
-            user_id: nil
-          )
+          existing_external_ids.add(external_id)
+          existing_names.add(name.to_s.downcase)
 
-          ProductSyncLog.link(product, sync_log)
           synced_count += 1
-          
-          puts "[ExternalSync] Imported: #{name} (external_id: #{external_id})"
         rescue Sequel::UniqueConstraintViolation
           skipped_count += 1
-          puts "[ExternalSync] Skipping duplicate: #{name}"
-        rescue => e
+          puts "[ExternalSync] Skipping duplicate due to DB constraint: #{name} (external_id: #{external_id})"
+          next
+        rescue StandardError => e
           warn "[ExternalSync] Failed to import product #{name}: #{e.message}"
+          next
         end
       end
 
@@ -168,19 +185,11 @@ class ExternalSyncService
     end
 
     def complete_sync_log(sync_log, synced_count)
-      sync_log.update(
-        status: SyncLog::STATUS_COMPLETED,
-        completed_at: Time.now
-      )
+      sync_log.mark_completed!
     end
 
     def fail_sync_log(sync_log, error)
-      sync_log.update(
-        status: SyncLog::STATUS_FAILED,
-        completed_at: Time.now,
-        error_message: "#{error.class.name}: #{error.message}"
-      )
-      
+      sync_log.mark_failed!(error)
       warn "[ExternalSync] Sync failed: #{error.message}"
     end
   end

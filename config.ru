@@ -1,11 +1,11 @@
 require_relative 'app/application'
 require_relative 'app/workers/product_worker'
-require_relative 'app/services/external_sync_service'
+require_relative 'app/services/external_product_sync_service'
 
 $stdout.sync = true
 $stderr.sync = true
 
-ExternalSyncService.sync_on_startup
+ExternalProductSyncService.sync_on_startup
 
 ProductWorker.start
 
