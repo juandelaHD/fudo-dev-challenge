@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+    container_name: fudo-challenge-api
+    stop_grace_period: 20s
+    ports:
+      - "${PORT}:9292"
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EXTERNAL_PRODUCTS_URL: ${EXTERNAL_PRODUCTS_URL}
+      HOST: ${HOST}
+      PORT: ${PORT}
+      RACK_ENV: ${RACK_ENV:-development}
+      ERROR_BACKTRACE_LINES: ${ERROR_BACKTRACE_LINES:-10}
+      SIMULATE_PROCESSING_DELAY: ${SIMULATE_PROCESSING_DELAY:-3}
+      JOB_QUEUE_MAX_CAPACITY: ${JOB_QUEUE_MAX_CAPACITY:-10}
+      MAX_USER_PENDING_JOBS: ${MAX_USER_PENDING_JOBS:-10}
+      API_PREFIX: ${API_PREFIX:-/v1}
+    networks:
+      - fudo_network
+
+networks:
+  fudo_network:
+    driver: bridge

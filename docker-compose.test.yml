@@ -1,0 +1,56 @@
+services:
+  test-db:
+    image: postgres:15-alpine
+    container_name: fudo-test-db
+    networks:
+      - test-network
+    environment:
+      POSTGRES_DB: fudo_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d fudo_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fudo-challenge-test
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - test-network
+    environment:
+      RACK_ENV: test
+      DATABASE_URL: postgresql://test_user:test_password@test-db:5432/fudo_test
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-1800}
+      EXTERNAL_PRODUCTS_URL: ${EXTERNAL_PRODUCTS_URL}
+      API_PREFIX: ${API_PREFIX:-/v1}
+      MAX_USER_PENDING_JOBS: ${MAX_USER_PENDING_JOBS:-5}
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    working_dir: /app
+    command: sh -c "
+      ruby -r sequel -r ./config/database -e \"
+        require 'sequel/extensions/migration';
+        puts 'Running test migrations...';
+        Sequel::Migrator.run(DB, './db/migrations');
+      \" &&
+      ruby -Itest -e 'Dir.glob(\"test/**/*_test.rb\").each { |f| require \"./#{f}\" }'
+      "
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  bundle_cache:
