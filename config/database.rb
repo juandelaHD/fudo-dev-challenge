@@ -3,11 +3,20 @@ require 'sequel'
 module Database
   def self.connection
     @connection ||= begin
-      database_url = ENV['DATABASE_URL']
+      rack_env = ENV['RACK_ENV'] || 'development'
+      
+      database_url = if rack_env == 'production'
+        ENV['DATABASE_URL']
+      else
+        ENV['DEV_DATABASE_URL']
+      end
 
       if database_url.nil? || database_url.strip.empty?
-        raise "ENV['DATABASE_URL'] is not set. Please configure the database connection string."
+        raise "Database URL is not set. Please configure #{var_name} in your .env file"
       end
+
+      puts "[Database] Environment: #{rack_env}"
+      puts "[Database] Connecting to: #{database_url.gsub(/:[^:@]+@/, ':****@')}"
       
       db = Sequel.connect(
         database_url,
@@ -16,6 +25,13 @@ module Database
         test: false,
         connect_timeout: 3
       )
+      
+      Sequel.application_timezone = :utc
+      Sequel.database_timezone = :utc
+      Sequel.typecast_timezone = :utc
+      
+      db.run("SET TIME ZONE 'UTC'")
+      
       db.extension :pg_json
       db
     end

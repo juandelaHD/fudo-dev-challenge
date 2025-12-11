@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: fudo_test
       POSTGRES_USER: test_user
       POSTGRES_PASSWORD: test_password
+      TZ: UTC
+      PGTZ: UTC
     ports:
       - "5433:5432"
     healthcheck:
@@ -29,12 +31,18 @@ services:
       - test-network
     environment:
       RACK_ENV: test
-      DATABASE_URL: postgresql://test_user:test_password@test-db:5432/fudo_test
+      DEV_DATABASE_URL: postgresql://test_user:test_password@test-db:5432/fudo_test
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-1800}
       EXTERNAL_PRODUCTS_URL: ${EXTERNAL_PRODUCTS_URL}
+      HOST: ${HOST}
+      PORT: ${PORT}
       API_PREFIX: ${API_PREFIX:-/v1}
-      MAX_USER_PENDING_JOBS: ${MAX_USER_PENDING_JOBS:-5}
+      ERROR_BACKTRACE_LINES: ${ERROR_BACKTRACE_LINES:-10}
+      SIMULATE_PROCESSING_DELAY: ${SIMULATE_PROCESSING_DELAY:-3}
+      JOB_QUEUE_MAX_CAPACITY: ${JOB_QUEUE_MAX_CAPACITY:-10}
+      MAX_USER_PENDING_JOBS: ${MAX_USER_PENDING_JOBS:-10}
+
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle

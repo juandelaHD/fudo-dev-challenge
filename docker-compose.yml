@@ -1,4 +1,25 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fudo-dev-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fudo_development
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fudo_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - development
+
   app:
     build:
       context: .
@@ -9,21 +30,36 @@ services:
     volumes:
       - .:/app
     environment:
+      RACK_ENV: ${RACK_ENV:-development}
+      DEV_DATABASE_URL: ${DEV_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/fudo_development}
       DATABASE_URL: ${DATABASE_URL}
+      
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       EXTERNAL_PRODUCTS_URL: ${EXTERNAL_PRODUCTS_URL}
+      
       HOST: ${HOST}
       PORT: ${PORT}
-      RACK_ENV: ${RACK_ENV:-development}
+      API_PREFIX: ${API_PREFIX:-/v1}
+      
       ERROR_BACKTRACE_LINES: ${ERROR_BACKTRACE_LINES:-10}
       SIMULATE_PROCESSING_DELAY: ${SIMULATE_PROCESSING_DELAY:-3}
       JOB_QUEUE_MAX_CAPACITY: ${JOB_QUEUE_MAX_CAPACITY:-10}
       MAX_USER_PENDING_JOBS: ${MAX_USER_PENDING_JOBS:-10}
-      API_PREFIX: ${API_PREFIX:-/v1}
     networks:
       - fudo_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+    profiles:
+      - development
+      - production
 
 networks:
   fudo_network:
     driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
